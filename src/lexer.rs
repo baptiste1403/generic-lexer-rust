@@ -1,4 +1,3 @@
-use std::vec;
 use super::prefix_tree::PrefixTree;
 use super::prefix_tree_cursor::PrefixTreeCursor;
 
@@ -12,7 +11,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             tokens: Vec::new(),
             curent_token: 0,
