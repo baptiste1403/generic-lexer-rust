@@ -32,7 +32,41 @@ impl Lexer {
         
         let mut cursor = PrefixTreeCursor::new(&prefix_tree);
 
-        for c in text.chars() { /* ***titre***  */
+        for c in text.chars() {
+            if cursor.try_move(c) {
+                keyword_buffer.push(c);
+            } else {
+                if cursor.get_token().is_some() {
+                    if main_buffer.len() > 0 {
+                        self.tokens.push(Token::new(DEFAULT_TOKEN_TYPE.to_string(), main_buffer.clone()));
+                    }
+                    self.tokens.push(Token::new(cursor.get_token().unwrap().to_string(), keyword_buffer.clone()));
+                    main_buffer.clear();
+                    keyword_buffer.clear();
+                } else {
+                    main_buffer.push_str(&keyword_buffer);
+                    keyword_buffer.clear();
+                }
+                cursor.reset();
+                if cursor.try_move(c) {
+                    keyword_buffer.push(c);
+                } else {
+                    main_buffer.push(c);
+                }
+            }
+        }
+
+        if cursor.get_token().is_some() {
+            if main_buffer.len() > 0 {
+                self.tokens.push(Token::new(DEFAULT_TOKEN_TYPE.to_string(), main_buffer.clone()));
+            }
+            self.tokens.push(Token::new(cursor.get_token().unwrap().to_string(), keyword_buffer.clone()));
+        } else {
+            main_buffer.push_str(&keyword_buffer);
+            self.tokens.push(Token::new(DEFAULT_TOKEN_TYPE.to_string(), main_buffer.clone()));
+        }
+
+        /*for c in text.chars() { /* ***titre***  */
             let cursor_move = cursor.try_move(c);
             if cursor_move {
                 keyword_buffer.push(c);
@@ -77,7 +111,7 @@ impl Lexer {
                 cursor.reset();
                 self.tokens.push(Token::new(DEFAULT_TOKEN_TYPE.to_string(), main_buffer.clone()));
             },
-        }
+        }*/
     }
 
     pub fn pick_previous(&mut self, backward_index: usize) -> Option<Token> {
@@ -121,7 +155,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse() {
+    fn test_parse1() {
         let mut lexer = Lexer::new();
         let text = "***Ceci est un titre*****".to_string();
         let keywords = vec![
@@ -145,4 +179,38 @@ mod tests {
         assert_eq!(token.get_value(), "***");
 
     }
+
+    #[test]
+    fn test_parse2() {
+        let mut lexer = Lexer::new();
+        let text = "##3310##".to_string();
+        let keywords = vec![
+            ("#".to_string(), "diese".to_string()),
+        ];
+
+        lexer.analyse(&text, &keywords);
+
+        let mut iter = lexer.into_iter();
+        let mut token = iter.next().unwrap();
+        assert_eq!(token.get_token_type(), "diese");
+        assert_eq!(token.get_value(), "#");
+
+        token = iter.next().unwrap();
+        assert_eq!(token.get_token_type(), "diese");
+        assert_eq!(token.get_value(), "#");
+
+        token = iter.next().unwrap();
+        assert_eq!(token.get_token_type(), "DEFAULT_TOKEN");
+        assert_eq!(token.get_value(), "3310");
+
+        token = iter.next().unwrap();
+        assert_eq!(token.get_token_type(), "diese");
+        assert_eq!(token.get_value(), "#");
+
+        token = iter.next().unwrap();
+        assert_eq!(token.get_token_type(), "diese");
+        assert_eq!(token.get_value(), "#");
+
+    }
+
 }
