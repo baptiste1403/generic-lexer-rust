@@ -10,6 +10,7 @@ const DEFAULT_TOKEN_TYPE: &str = "DEFAULT_TOKEN";
 pub struct Lexer {
     tokens: Vec<Token>,
     curent_token: usize,
+    before_first: bool,
 }
 
 impl Lexer {
@@ -17,6 +18,7 @@ impl Lexer {
         Self {
             tokens: Vec::new(),
             curent_token: 0,
+            before_first: true,
         }
     }
 
@@ -109,8 +111,12 @@ impl Iterator for Lexer {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.curent_token < self.tokens.len() {
+            if self.before_first {
+                self.before_first = false;
+            } else {
+                self.curent_token += 1;
+            }
             let token = self.tokens.get(self.curent_token);
-            self.curent_token += 1;
             return Some(token.unwrap().clone());
         }
         return None;
@@ -208,12 +214,12 @@ mod tests {
         ("]", "close_bracket"),
         ("(", "open_paren"),
         (")", "close_paren"),
-    ];
-    let regex = vec![
-        ("^\\d+$", "number"),
-    ];
+        ];
+        let regex = vec![
+            ("^\\d+$", "number"),
+        ];
 
-    lexer.analyse(&text, &keywords, &regex);
+        lexer.analyse(&text, &keywords, &regex);
 
         for token in lexer {
             println!("{}: {}", token.get_token_type(), token.get_value());
