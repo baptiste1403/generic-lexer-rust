@@ -7,18 +7,18 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(token_type: String, value: String) -> Self {
+    pub fn new(token_type: & str, value: & str) -> Self {
         Self {
-            token_type,
-            value,
+            token_type : token_type.to_string(),
+            value : value.to_string(),
         }
     }
 
-    pub fn get_token_type(&self) -> &String {
+    pub fn get_token_type(&self) -> &str {
         return &self.token_type;
     }
 
-    pub fn get_value(&self) -> &String {
+    pub fn get_value(&self) -> &str {
         return &self.value;
     }
 }

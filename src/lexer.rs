@@ -20,7 +20,7 @@ impl Lexer {
         }
     }
 
-    pub fn analyse(&mut self, text: &String, keywords: &Vec<(String, String)>, patterns: &Vec<(String, String)>) {
+    pub fn analyse(&mut self, text: &str, keywords: &Vec<(&str, &str)>, patterns: &Vec<(&str, &str)>) {
         
         let mut main_buffer = String::new();
         let mut keyword_buffer = String::new();
@@ -28,8 +28,8 @@ impl Lexer {
 
         for keyword in keywords {
             prefix_tree.add(
-                keyword.0.as_str(), 
-                keyword.1.as_str());
+                keyword.0, 
+                keyword.1);
         }
         
         let mut cursor = PrefixTreeCursor::new(&prefix_tree);
@@ -40,9 +40,9 @@ impl Lexer {
             } else {
                 if cursor.get_token().is_some() {
                     if main_buffer.len() > 0 {
-                        self.tokens.push(Token::new(self.match_pattern_token(&main_buffer, patterns), main_buffer.clone()));
+                        self.tokens.push(Token::new(self.match_pattern_token(&main_buffer, patterns), main_buffer.as_str()));
                     }
-                    self.tokens.push(Token::new(cursor.get_token().unwrap().to_string(), keyword_buffer.clone()));
+                    self.tokens.push(Token::new(cursor.get_token().unwrap(), keyword_buffer.as_str()));
                     main_buffer.clear();
                     keyword_buffer.clear();
                 } else {
@@ -60,30 +60,30 @@ impl Lexer {
 
         if cursor.get_token().is_some() {
             if main_buffer.len() > 0 {
-                self.tokens.push(Token::new(self.match_pattern_token(&main_buffer, patterns), main_buffer.clone()));
+                self.tokens.push(Token::new(self.match_pattern_token(&main_buffer, patterns), main_buffer.as_str()));
             }
-            self.tokens.push(Token::new(cursor.get_token().unwrap().to_string(), keyword_buffer.clone()));
+            self.tokens.push(Token::new(cursor.get_token().unwrap(), keyword_buffer.as_str()));
         } else {
             main_buffer.push_str(&keyword_buffer);
-            self.tokens.push(Token::new(self.match_pattern_token(&main_buffer, patterns), main_buffer.clone()));
+            self.tokens.push(Token::new(self.match_pattern_token(&main_buffer, patterns), main_buffer.as_str()));
         }
     }
 
-    fn match_pattern_token(&self, text: &String, patterns: &Vec<(String, String)>) -> String {
+    fn match_pattern_token<'a>(&self, text: &String, patterns: &'a Vec<(&str, &str)>) -> &'a str {
         if patterns.len() == 0 { // no patterns, return default token type
-            return DEFAULT_TOKEN_TYPE.to_string();
+            return DEFAULT_TOKEN_TYPE;
         }
         for pattern in patterns {
-            let re = match Regex::new(pattern.0.as_str()) {
+            let re = match Regex::new(pattern.0) {
                 Ok(re) => re,
-                Err(_) => panic!("Invalid regex pattern: {}", pattern.0.as_str()),
+                Err(_) => panic!("Invalid regex pattern: {}", pattern.0),
             };
             if re.is_match(text) {
-                return pattern.1.to_string();
+                return pattern.1;
             }
         }
 
-        return DEFAULT_TOKEN_TYPE.to_string();
+        return DEFAULT_TOKEN_TYPE;
     }
 
     pub fn pick_previous(&mut self, backward_index: usize) -> Option<Token> {
@@ -129,14 +129,14 @@ mod tests {
     #[test]
     fn test_parse1() {
         let mut lexer = Lexer::new();
-        let text = "***Ceci est un titre*****".to_string();
+        let text = "***Ceci est un titre*****";
         let keywords = vec![
-            ("***".to_string(), "tk_title1".to_string()),
-            ("**".to_string(), "tk_title2".to_string())
+            ("***", "tk_title1"),
+            ("**", "tk_title2")
         ];
         let patterns = vec![
-            ("[0-9]+".to_string(), "tk_number".to_string()),
-            ("[a-zA-Z]+".to_string(), "tk_text".to_string())
+            ("[0-9]+", "tk_number"),
+            ("[a-zA-Z]+", "tk_text")
         ];
 
         lexer.analyse(&text, &keywords, &patterns);
@@ -159,14 +159,14 @@ mod tests {
     #[test]
     fn test_parse2() {
         let mut lexer = Lexer::new();
-        let text = "#3310##".to_string();
+        let text = "#3310##";
         let keywords = vec![
-            ("#".to_string(), "diese".to_string()),
-            ("##".to_string(), "double_diese".to_string())
+            ("#", "diese"),
+            ("##", "double_diese")
         ];
         let patterns = vec![
-            ("[0-9]+".to_string(), "tk_number".to_string()),
-            ("[a-zA-Z]+".to_string(), "tk_text".to_string())
+            ("[0-9]+", "tk_number"),
+            ("[a-zA-Z]+", "tk_text")
         ];
 
         lexer.analyse(&text, &keywords, &patterns);
@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn test_no_test() {
         let mut lexer = Lexer::new();
-        let text = "# ceci est un test rapide et efficace".to_string();
+        let text = "# ceci est un test rapide et efficace";
         
         let keywords = vec![
         (" ", "space"),
@@ -212,17 +212,6 @@ mod tests {
     let regex = vec![
         ("^\\d+$", "number"),
     ];
-
-    let keywords = keywords
-        .iter()
-        .map(|(a, b)| (a.to_string(), b.to_string()))
-        .collect::<Vec<(String, String)>>();
-    let regex = regex
-        .iter()
-        .map(|(a, b)| (a.to_string(), b.to_string()))
-        .collect::<Vec<(String, String)>>();
-
-    print!("keywords: {:?}", keywords);
 
     lexer.analyse(&text, &keywords, &regex);
 
