@@ -3,6 +3,8 @@ use super::prefix_tree_cursor::PrefixTreeCursor;
 
 use super::token::Token;
 
+use regex::Regex;
+
 const DEFAULT_TOKEN_TYPE: &str = "DEFAULT_TOKEN";
 
 pub struct Lexer {
@@ -18,7 +20,7 @@ impl Lexer {
         }
     }
 
-    pub fn analyse(&mut self, text: &String, keywords: &Vec<(String, String)>) {
+    pub fn analyse(&mut self, text: &String, keywords: &Vec<(String, String)>, patterns: &Vec<(String, String)>) {
         
         let mut main_buffer = String::new();
         let mut keyword_buffer = String::new();
@@ -38,7 +40,7 @@ impl Lexer {
             } else {
                 if cursor.get_token().is_some() {
                     if main_buffer.len() > 0 {
-                        self.tokens.push(Token::new(DEFAULT_TOKEN_TYPE.to_string(), main_buffer.clone()));
+                        self.tokens.push(Token::new(self.match_pattern_token(&main_buffer, patterns), main_buffer.clone()));
                     }
                     self.tokens.push(Token::new(cursor.get_token().unwrap().to_string(), keyword_buffer.clone()));
                     main_buffer.clear();
@@ -58,60 +60,30 @@ impl Lexer {
 
         if cursor.get_token().is_some() {
             if main_buffer.len() > 0 {
-                self.tokens.push(Token::new(DEFAULT_TOKEN_TYPE.to_string(), main_buffer.clone()));
+                self.tokens.push(Token::new(self.match_pattern_token(&main_buffer, patterns), main_buffer.clone()));
             }
             self.tokens.push(Token::new(cursor.get_token().unwrap().to_string(), keyword_buffer.clone()));
         } else {
             main_buffer.push_str(&keyword_buffer);
-            self.tokens.push(Token::new(DEFAULT_TOKEN_TYPE.to_string(), main_buffer.clone()));
+            self.tokens.push(Token::new(self.match_pattern_token(&main_buffer, patterns), main_buffer.clone()));
         }
+    }
 
-        /*for c in text.chars() { /* ***titre***  */
-            let cursor_move = cursor.try_move(c);
-            if cursor_move {
-                keyword_buffer.push(c);
-            } else {
-                match cursor.get_token() {
-                    Some(token) => {
-                        if main_buffer.len() > 0 {
-                            self.tokens.push(Token::new(DEFAULT_TOKEN_TYPE.to_string(), main_buffer.clone()));
-                            main_buffer.clear();
-                        }
-                        self.tokens.push(Token::new(token.to_string(), keyword_buffer.clone()));
-                        keyword_buffer.clear();
-                        cursor.reset();
-                        if cursor.try_move(c)  {
-                            keyword_buffer.push(c);
-                        } else {
-                            main_buffer.push(c);
-                        }
-                    },
-                    None => {
-                        main_buffer.push_str(&keyword_buffer);
-                        keyword_buffer.clear();
-                        cursor.reset();
-                        main_buffer.push(c);
-                    },
-                }
+    fn match_pattern_token(&self, text: &String, patterns: &Vec<(String, String)>) -> String {
+        if patterns.len() == 0 { // no patterns, return default token type
+            return DEFAULT_TOKEN_TYPE.to_string();
+        }
+        for pattern in patterns {
+            let re = match Regex::new(pattern.0.as_str()) {
+                Ok(re) => re,
+                Err(_) => panic!("Invalid regex pattern: {}", pattern.0.as_str()),
+            };
+            if re.is_match(text) {
+                return pattern.1.to_string();
             }
         }
-        match cursor.get_token() {
-            Some(token) => {
-                if main_buffer.len() > 0 {
-                    self.tokens.push(Token::new(DEFAULT_TOKEN_TYPE.to_string(), main_buffer.clone()));
-                    main_buffer.clear();
-                }
-                self.tokens.push(Token::new(token.to_string(), keyword_buffer.clone()));
-                keyword_buffer.clear();
-                cursor.reset();
-            },
-            None => {
-                main_buffer.push_str(&keyword_buffer);
-                keyword_buffer.clear();
-                cursor.reset();
-                self.tokens.push(Token::new(DEFAULT_TOKEN_TYPE.to_string(), main_buffer.clone()));
-            },
-        }*/
+
+        return DEFAULT_TOKEN_TYPE.to_string();
     }
 
     pub fn pick_previous(&mut self, backward_index: usize) -> Option<Token> {
@@ -162,8 +134,12 @@ mod tests {
             ("***".to_string(), "tk_title1".to_string()),
             ("**".to_string(), "tk_title2".to_string())
         ];
+        let patterns = vec![
+            ("[0-9]+".to_string(), "tk_number".to_string()),
+            ("[a-zA-Z]+".to_string(), "tk_text".to_string())
+        ];
 
-        lexer.analyse(&text, &keywords);
+        lexer.analyse(&text, &keywords, &patterns);
 
         let mut iter = lexer.into_iter();
         let mut token = iter.next().unwrap();
@@ -171,7 +147,7 @@ mod tests {
         assert_eq!(token.get_value(), "***");
 
         token = iter.next().unwrap();
-        assert_eq!(token.get_token_type(), "DEFAULT_TOKEN");
+        assert_eq!(token.get_token_type(), "tk_text");
         assert_eq!(token.get_value(), "Ceci est un titre");
 
         token = iter.next().unwrap();
@@ -187,8 +163,12 @@ mod tests {
         let keywords = vec![
             ("#".to_string(), "diese".to_string()),
         ];
+        let patterns = vec![
+            ("[0-9]+".to_string(), "tk_number".to_string()),
+            ("[a-zA-Z]+".to_string(), "tk_text".to_string())
+        ];
 
-        lexer.analyse(&text, &keywords);
+        lexer.analyse(&text, &keywords, &patterns);
 
         let mut iter = lexer.into_iter();
         let mut token = iter.next().unwrap();
@@ -200,7 +180,7 @@ mod tests {
         assert_eq!(token.get_value(), "#");
 
         token = iter.next().unwrap();
-        assert_eq!(token.get_token_type(), "DEFAULT_TOKEN");
+        assert_eq!(token.get_token_type(), "tk_number");
         assert_eq!(token.get_value(), "3310");
 
         token = iter.next().unwrap();
