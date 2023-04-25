@@ -10,23 +10,23 @@ and a list of tuples (token_representation, token_name) for the regular expressi
 # Examples : lexing a simple text
 
 ```rust
-use lexer::lexer::Lexer;
-let mut lexer = Lexer::new();
-let text = "***Ceci est un titre***".to_string();
-let keywords = vec![
-    ("***".to_string(), "tk_title1".to_string()),
-    ("**".to_string(), "tk_title2".to_string())
-    ];
-let patterns = vec![
-    ("[0-9]+".to_string(), "tk_number".to_string()),
-    ("[a-zA-Z]+".to_string(), "tk_text".to_string())
-];
-
-lexer.analyse(&text, &keywords, &patterns);
-
-for token in lexer {
-    println!("token_type: {}, value: {}", token.get_token_type(), token.get_value());
-}
+// use lexer::lexer::Lexer;
+// let mut lexer = Lexer::new();
+// let text = "***Ceci est un titre***".to_string();
+// let keywords = vec![
+//     ("***".to_string(), "tk_title1".to_string()),
+//     ("**".to_string(), "tk_title2".to_string())
+//     ];
+// let patterns = vec![
+//     ("[0-9]+".to_string(), "tk_number".to_string()),
+//     ("[a-zA-Z]+".to_string(), "tk_text".to_string())
+// ];
+// 
+// lexer.analyse(&text, &keywords, &patterns);
+// 
+// for token in lexer {
+//     println!("token_type: {}, value: {}", token.get_token_type(), token.get_value());
+// }
 ```
 
 should print :

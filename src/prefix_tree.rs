@@ -29,8 +29,6 @@ impl PrefixTree {
             };
             if i == word.len() - 1 {
                 current.token = Some(token.to_string());
-            } else {
-                current.token = None;
             }
         }
     }

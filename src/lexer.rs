@@ -159,9 +159,10 @@ mod tests {
     #[test]
     fn test_parse2() {
         let mut lexer = Lexer::new();
-        let text = "##3310##".to_string();
+        let text = "#3310##".to_string();
         let keywords = vec![
             ("#".to_string(), "diese".to_string()),
+            ("##".to_string(), "double_diese".to_string())
         ];
         let patterns = vec![
             ("[0-9]+".to_string(), "tk_number".to_string()),
@@ -176,21 +177,58 @@ mod tests {
         assert_eq!(token.get_value(), "#");
 
         token = iter.next().unwrap();
-        assert_eq!(token.get_token_type(), "diese");
-        assert_eq!(token.get_value(), "#");
-
-        token = iter.next().unwrap();
         assert_eq!(token.get_token_type(), "tk_number");
         assert_eq!(token.get_value(), "3310");
 
         token = iter.next().unwrap();
-        assert_eq!(token.get_token_type(), "diese");
-        assert_eq!(token.get_value(), "#");
+        assert_eq!(token.get_token_type(), "double_diese");
+        assert_eq!(token.get_value(), "##");
 
-        token = iter.next().unwrap();
-        assert_eq!(token.get_token_type(), "diese");
-        assert_eq!(token.get_value(), "#");
+    }
 
+    #[test]
+    fn test_no_test() {
+        let mut lexer = Lexer::new();
+        let text = "# ceci est un test rapide et efficace".to_string();
+        
+        let keywords = vec![
+        (" ", "space"),
+        ("\n", "newline"),
+        ("\"", "quote"),
+        ("```", "code_block"),
+        ("`", "code"),
+        ("-", "list"),
+        ("**", "bold"),
+        ("*", "italic"),
+        ("$$", "disp_math"),
+        ("$", "inline_math"),
+        ("#", "heading1"),
+        ("##", "heading2"),
+        ("[", "open_bracket"),
+        ("]", "close_bracket"),
+        ("(", "open_paren"),
+        (")", "close_paren"),
+    ];
+    let regex = vec![
+        ("^\\d+$", "number"),
+    ];
+
+    let keywords = keywords
+        .iter()
+        .map(|(a, b)| (a.to_string(), b.to_string()))
+        .collect::<Vec<(String, String)>>();
+    let regex = regex
+        .iter()
+        .map(|(a, b)| (a.to_string(), b.to_string()))
+        .collect::<Vec<(String, String)>>();
+
+    print!("keywords: {:?}", keywords);
+
+    lexer.analyse(&text, &keywords, &regex);
+
+        for token in lexer {
+            println!("{}: {}", token.get_token_type(), token.get_value());
+        }
     }
 
 }
