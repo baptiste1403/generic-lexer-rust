@@ -110,7 +110,7 @@ impl Iterator for Lexer {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.curent_token < self.tokens.len() {
+        if self.curent_token < self.tokens.len() - 1 {
             if self.before_first {
                 self.before_first = false;
             } else {
